@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sqlite3
 import requests
 import json
 import pandas as pd
@@ -12,22 +13,27 @@ from langchain_core.documents import Document
 import urllib3
 from dotenv import load_dotenv
 
-os.environ['PATH'] = './:' + os.environ['PATH']
+
 
 # Load environment variables
 load_dotenv()
 groq_api_key = os.getenv("API_KEY")
 
-
+# os.environ['PATH'] = './:' + os.environ['PATH']
 # Function to get SQLite version
+# def get_sqlite_version():
+#     try:
+#         # Call sqlite3.exe with --version
+#         result = subprocess.run(['sqlite3', '--version'], capture_output=True, text=True, check=True)
+#         # Print the output (the version)
+#         print("SQLite Version:", result.stdout.strip())
+#     except Exception as e:
+#         print("Error while trying to get SQLite version:", e)
+
 def get_sqlite_version():
-    try:
-        # Call sqlite3.exe with --version
-        result = subprocess.run(['sqlite3', '--version'], capture_output=True, text=True, check=True)
-        # Print the output (the version)
-        print("SQLite Version:", result.stdout.strip())
-    except Exception as e:
-        print("Error while trying to get SQLite version:", e)
+    version = sqlite3.sqlite_version
+    print("SQLite Version:", version)
+
 
 # Call the function to print the SQLite version
 get_sqlite_version()
