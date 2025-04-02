@@ -31,7 +31,7 @@ except Exception as e:
 index_name = "example-index"  # Use lower case and hyphens
 
 # Initialize embeddings
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+embeddings_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
 
 # Initialize vector_store as None initially
 vector_store = None
@@ -49,10 +49,10 @@ except Exception as e:
     st.error(f"Error while checking or creating index: {e}")
     st.stop()
 
-# Initialize LangchainPinecone vector store
+# Initialize LangchainPinecone vector store correctly
 try:
-    # Initialize the LangchainPinecone vector store correctly without unsupported parameters
-    vector_store = LangchainPinecone(index=index_name, embedding_function=embeddings.embed_query)
+    vector_store = LangchainPinecone(index_name=index_name)
+    vector_store.embed_function = embeddings_model.embed_query  # Set the embedding function after initialization
     st.success("Vector store initialized successfully.")
 except Exception as e:
     st.error(f"Error initializing vector store: {e}")  # Handle initialization error
@@ -78,9 +78,7 @@ class GroqLLM:
         }
 
         try:
-            # Make API call
             response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False)
-
             if response.status_code == 200:
                 collected_content = ""
                 for line in response.iter_lines():
