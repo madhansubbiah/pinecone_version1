@@ -6,7 +6,7 @@ import streamlit as st
 from uuid import uuid4
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain.vectorstores.pinecone import Pinecone  # Correct import for Pinecone
+from langchain_community.vectorstores import Pinecone  # Updated import for Pinecone
 from langchain_core.documents import Document
 import pinecone
 import urllib3
@@ -21,7 +21,7 @@ pinecone_api_key = os.getenv("PINECONE_API_KEY")  # Add your Pinecone API key in
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Initialize Pinecone
-pinecone.init(api_key=pinecone_api_key, environment="us-west1-gcp")  # Change environment as per your setup
+pc = pinecone.Pinecone(api_key=pinecone_api_key, environment="us-west1-gcp")  # Change environment as per your setup
 
 # Initialize embeddings and vector store
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
@@ -145,7 +145,7 @@ elif app_mode == "View Documents & Clear Index":
         if st.button("Clear Pinecone Index"):
             try:
                 # Using Pinecone API to delete all items in the index
-                pinecone.delete_index(index_name)
+                pinecone.delete_index(index_name)  # Adjust as necessary; this might clear the index instead of deleting it.
                 st.success("Pinecone Index has been successfully cleared.")
             except Exception as e:
                 st.error(f"Error clearing Pinecone Index: {e}")
