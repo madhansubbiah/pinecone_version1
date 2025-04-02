@@ -1,5 +1,7 @@
 import sys
 import os
+import pysqlite3
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import subprocess
 import requests
 import json
@@ -12,8 +14,7 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 import urllib3
 from dotenv import load_dotenv
-import pysqlite3
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 
 
 st.write("The path ",os.path.dirname(sys.executable))
