@@ -47,7 +47,7 @@ try:
     existing_indexes = pc.list_indexes().names()
     st.write(f"Existing indexes: {existing_indexes}")  # Debugging output
     if index_name not in existing_indexes:
-        pc.create_index(name=index_name, dimension=1536, metric='euclidean', spec=ServerlessSpec(cloud='aws', region='us-west-2'))
+        pc.create_index(name=index_name, dimension=1536, metric='euclidean', spec=ServerlessSpec(cloud='aws', region='us-east-1'))
         st.success(f"Index '{index_name}' created successfully.")
     else:
         st.success(f"Index '{index_name}' already exists.")
