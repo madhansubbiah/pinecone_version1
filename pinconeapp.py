@@ -1,6 +1,6 @@
 import os
 import requests
-import pinecone  # Corrected import for Pinecone
+import pinecone
 import json
 import pandas as pd
 import streamlit as st
@@ -10,6 +10,7 @@ from langchain.vectorstores import Pinecone as LangchainPinecone
 from langchain.schema import Document
 import urllib3
 from dotenv import load_dotenv
+from pinecone import Pinecone, ServerlessSpec  # Corrected import for Pinecone class initialization
 
 # Load environment variables
 load_dotenv()
@@ -21,8 +22,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Initialize Pinecone with your API Key
 try:
-    # Set up Pinecone client initialization with API Key
-    pinecone.init(api_key=pinecone_api_key)  # Correct Pinecone initialization
+    # Creating an instance of the Pinecone class instead of using init
+    pc = Pinecone(api_key=pinecone_api_key)  # Create a Pinecone instance
     st.success("Pinecone initialized successfully.")
 except Exception as e:
     st.error(f"Error initializing Pinecone: {e}")
@@ -40,14 +41,14 @@ vector_store = None
 # Check if the index exists; create it if it doesn't
 try:
     # List existing indexes
-    existing_indexes = pinecone.list_indexes()  # Correct method to list indexes
+    existing_indexes = pc.list_indexes().names()  # Correct method to list indexes
     st.write(f"Existing indexes: {existing_indexes}")  # Debugging output
     if index_name not in existing_indexes:
-        pinecone.create_index(
+        pc.create_index(
             name=index_name,
             dimension=1536,
             metric='euclidean',
-            spec=pinecone.ServerlessSpec(
+            spec=ServerlessSpec(
                 cloud='aws',  # Cloud provider (e.g., aws)
                 region='us-west-2'  # Region (e.g., us-west-2)
             )
