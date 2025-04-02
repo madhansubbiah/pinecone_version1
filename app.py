@@ -1,7 +1,6 @@
 import sys
 import os
 import sqlite3
-import subprocess
 import requests
 import json
 import pandas as pd
@@ -25,35 +24,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 sqlite_version = sqlite3.sqlite_version
 st.title("SQLite Version Display")
 st.write("SQLite Version (Python Library):", sqlite_version)
-
-# The path to your sqlite3.exe
-sqlite3_path = os.path.join(os.getcwd(), 'sqlite3.exe')
-st.write(f"SQLite Executable Path: {sqlite3_path}")
-
-# Check if the executable can be accessed
-if os.path.isfile(sqlite3_path):
-    st.write("Found sqlite3.exe in the current directory.")
-else:
-    st.warning("sqlite3.exe not found in the current directory.")
-
-# Function to get SQLite version using sqlite3.exe
-def get_sqlite_version():
-    st.write("Inside SQLite version")
-    try:
-        # Call sqlite3.exe with --version
-        result = subprocess.run([sqlite3_path, '--version'], capture_output=True, text=True, check=True)
-        st.write("SQLite Version (Executable):", result.stdout.strip())
-    except FileNotFoundError:
-        st.warning("sqlite3.exe not found in the current directory.")
-    except PermissionError:
-        st.warning("Permission denied when trying to execute sqlite3.exe.")
-    except Exception as e:
-        st.warning(f"Error while trying to get SQLite version: {e}")
-
-# Call the function to print the SQLite version
-st.write("Going to call sqlite")
-get_sqlite_version()
-st.write("After called sqlite")
 
 # Initialize embeddings and vector store
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
