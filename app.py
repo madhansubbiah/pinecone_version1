@@ -1,4 +1,3 @@
-import sys
 import os
 import requests
 import json
@@ -7,21 +6,27 @@ import streamlit as st
 from uuid import uuid4
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain_chroma import Chroma
+from langchain.vectorstores import Pinecone  # Import Pinecone as the vector store
 from langchain_core.documents import Document
+import pinecone  # Import the Pinecone client
 import urllib3
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 groq_api_key = os.getenv("API_KEY")
+pinecone_api_key = os.getenv("PINECONE_API_KEY")  # Add your Pinecone API key in .env
 
 # Suppress warnings related to unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Initialize embeddings and vector store using in-memory storage
+# Initialize Pinecone
+pinecone.init(api_key=pinecone_api_key, environment="us-west1-gcp")  # Change environment as per your setup
+
+# Initialize embeddings and vector store
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-vector_store = Chroma(collection_name="example_collection", embedding_function=embeddings, persist_directory=None)
+index_name = "example_index"  # Specify your index name
+vector_store = Pinecone(index_name=index_name, embedding_function=embeddings)
 
 class GroqLLM:
     def __init__(self, api_key):
@@ -84,9 +89,9 @@ def handle_not_satisfied(query):
         st.write("No response was obtained from the LLM.")
 
 # Streamlit application
-st.title("Chroma and ChatGroq Query Interface")
+st.title("Pinecone and ChatGroq Query Interface")
 st.sidebar.title("Navigation")
-app_mode = st.sidebar.selectbox("Choose an option", ["Data Ingestion to Chroma", "View Documents & Clear DB", "Search in Chroma DB/LLM"])
+app_mode = st.sidebar.selectbox("Choose an option", ["Data Ingestion to Pinecone", "View Documents & Clear Index", "Search in Pinecone/LLM"])
 
 # Initialize session state variables
 if 'results' not in st.session_state:
@@ -98,21 +103,21 @@ if 'query' not in st.session_state:
 if 'satisfaction' not in st.session_state:
     st.session_state.satisfaction = None
 
-# Reset session state when navigating to Search in Chroma DB/LLM
-if app_mode == "Search in Chroma DB/LLM":
+# Reset session state when navigating to Search in Pinecone/LLM
+if app_mode == "Search in Pinecone/LLM":
     st.session_state.query = ''
     st.session_state.results = []
     st.session_state.llm_response = ''
     st.session_state.satisfaction = None  # Resetting satisfaction state
 
-if app_mode == "Data Ingestion to Chroma":
+if app_mode == "Data Ingestion to Pinecone":
     st.markdown("## Enter Raw Text or Upload Documents")
     col1, col2 = st.columns(2)
 
     with col1:
         uploaded_file = st.file_uploader("Choose a CSV or TXT file to upload.", type=["csv", "txt"])
     with col2:
-        free_text_input = st.text_area("Or enter free text to store in Chroma DB:", placeholder="Type your text here...")
+        free_text_input = st.text_area("Or enter free text to store in Pinecone:", placeholder="Type your text here...")
 
     if st.button("Store Document"):
         if uploaded_file is not None:
@@ -121,44 +126,44 @@ if app_mode == "Data Ingestion to Chroma":
                 for index, row in df.iterrows():
                     content = row['content'] if 'content' in row else str(row)
                     vector_store.add_documents([Document(page_content=content, metadata={"source": "user_upload"}, id=str(uuid4()))])
-                st.success("CSV content has been successfully stored in Chroma DB.")
+                st.success("CSV content has been successfully stored in Pinecone.")
             elif uploaded_file.type == "text/plain":
                 text_content = uploaded_file.read().decode("utf-8")
                 vector_store.add_documents([Document(page_content=text_content, metadata={"source": "user_upload"}, id=str(uuid4()))])
-                st.success("Text content has been successfully stored in Chroma DB.")
+                st.success("Text content has been successfully stored in Pinecone.")
         elif free_text_input:
             vector_store.add_documents([Document(page_content=free_text_input, metadata={"source": "user_input"}, id=str(uuid4()))])
-            st.success("Free text has been successfully stored in Chroma DB.")
+            st.success("Free text has been successfully stored in Pinecone.")
         else:
             st.warning("Please upload a file or enter some text.")
 
-elif app_mode == "View Documents & Clear DB":
-    st.markdown("## Manage Your Documents in Chroma DB")
+elif app_mode == "View Documents & Clear Index":
+    st.markdown("## Manage Your Documents in Pinecone Index")
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("Clear Chroma DB"):
+        if st.button("Clear Pinecone Index"):
             try:
-                vector_store.delete_collection()
-                st.success("Chroma DB has been successfully cleared.")
+                vector_store.delete_collection()  # Clear the index
+                st.success("Pinecone Index has been successfully cleared.")
             except Exception as e:
-                st.error(f"Error clearing Chroma DB: {e}")
+                st.error(f"Error clearing Pinecone Index: {e}")
 
     with col2:
-        if st.button("View Chroma Content"):
+        if st.button("View Pinecone Content"):
             try:
                 all_documents = vector_store.similarity_search("", k=10)
                 if all_documents:
-                    st.subheader("Current Documents in Chroma:")
+                    st.subheader("Current Documents in Pinecone:")
                     for doc in all_documents:
                         st.write(f"**ID:** {doc.id} | **Content:** {doc.page_content}")
                 else:
-                    st.info("No documents found in Chroma DB.")
+                    st.info("No documents found in Pinecone Index.")
             except Exception as e:
                 st.error(f"Error retrieving documents: {e}")
 
-elif app_mode == "Search in Chroma DB/LLM":
-    st.markdown("## Search in Chroma DB/LLM")
+elif app_mode == "Search in Pinecone/LLM":
+    st.markdown("## Search in Pinecone/LLM")
 
     if st.session_state.satisfaction is None:
         query = st.text_input("Enter your query:", value=st.session_state.query)
@@ -182,7 +187,7 @@ elif app_mode == "Search in Chroma DB/LLM":
                     for text, score in st.session_state.results:
                         st.write(f"**Score:** {score} | **Content:** {text}")
                 else:
-                    st.info("No relevant texts found in Chroma.")
+                    st.info("No relevant texts found in Pinecone.")
 
         with col2:
             if st.button("Not Satisfied"):
