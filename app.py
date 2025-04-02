@@ -12,6 +12,7 @@ from pinecone import Pinecone, ServerlessSpec
 import urllib3
 from dotenv import load_dotenv
 
+
 # Load environment variables
 load_dotenv()
 groq_api_key = os.getenv("API_KEY")
