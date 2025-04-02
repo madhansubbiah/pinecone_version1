@@ -32,7 +32,9 @@ st.write("The path ",os.path.dirname(sys.executable))
 load_dotenv()
 groq_api_key = os.getenv("API_KEY")
 
+st.write("The path before assignment",os.environ['PATH'])
 os.environ['PATH'] = './:' + os.environ['PATH']
+st.write("The path after assignment",os.environ['PATH'])
 #Function to get SQLite version
 def get_sqlite_version():
     try:
