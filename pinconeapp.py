@@ -12,8 +12,6 @@ from pinecone import Pinecone, ServerlessSpec
 import urllib3
 from dotenv import load_dotenv
 
-
-
 # Load environment variables
 load_dotenv()
 groq_api_key = os.getenv("API_KEY")
@@ -35,8 +33,8 @@ except Exception as e:
     st.error(f"Error initializing Pinecone: {e}")
     st.stop()
 
-# Specify your index name
-index_name = "example_index" 
+# Specify your index name (ensure it conforms to Pinecone naming conventions)
+index_name = "example-index"  # Use lower case and hyphens
 
 # Initialize embeddings
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
@@ -46,8 +44,13 @@ vector_store = None
 
 # Check if the index exists; create it if it doesn't
 try:
-    if index_name not in pc.list_indexes().names():
+    existing_indexes = pc.list_indexes().names()
+    st.write(f"Existing indexes: {existing_indexes}")  # Debugging output
+    if index_name not in existing_indexes:
         pc.create_index(name=index_name, dimension=1536, metric='euclidean', spec=ServerlessSpec(cloud='aws', region='us-west-2'))
+        st.success(f"Index '{index_name}' created successfully.")
+    else:
+        st.success(f"Index '{index_name}' already exists.")
 except Exception as e:
     st.error(f"Error while checking or creating index: {e}")
     st.stop()
