@@ -1,6 +1,6 @@
+import sys
 import os
 import subprocess
-import sqlite3
 import requests
 import json
 import pandas as pd
@@ -19,21 +19,24 @@ from dotenv import load_dotenv
 load_dotenv()
 groq_api_key = os.getenv("API_KEY")
 
-# os.environ['PATH'] = './:' + os.environ['PATH']
-# Function to get SQLite version
-# def get_sqlite_version():
-#     try:
-#         # Call sqlite3.exe with --version
-#         result = subprocess.run(['sqlite3', '--version'], capture_output=True, text=True, check=True)
-#         # Print the output (the version)
-#         print("SQLite Version:", result.stdout.strip())
-#     except Exception as e:
-#         print("Error while trying to get SQLite version:", e)
-
+os.environ['PATH'] = './:' + os.environ['PATH']
+#Function to get SQLite version
 def get_sqlite_version():
-    version = sqlite3.sqlite_version
-    print("SQLite Version:", version)
+    try:
+        # Call sqlite3.exe with --version
+        result = subprocess.run(['sqlite3', '--version'], capture_output=True, text=True, check=True)
+        # Print the output (the version)
+        #print("SQLite Version:", result.stdout.strip())
+        st.write("SQLite Version:", result.stdout.strip())
+    except Exception as e:
+        print("Error while trying to get SQLite version:", e)
 
+
+# def get_sqlite_version():
+#     version = sqlite3.sqlite_version
+#     print("SQLite Version:", version)
+
+# st.write("SQLite Version:",sqlite3.sqlite_version)
 
 # Call the function to print the SQLite version
 get_sqlite_version()
