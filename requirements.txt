@@ -1,4 +1,5 @@
 langchain
+langchain-community
 pinecone-client 
 pysqlite3-binary
 altair==5.5.0
