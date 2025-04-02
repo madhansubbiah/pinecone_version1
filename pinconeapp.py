@@ -4,11 +4,10 @@ import json
 import pandas as pd
 import streamlit as st
 from uuid import uuid4
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_groq import ChatGroq
-from langchain_community.vectorstores import Pinecone as LangchainPinecone
-from langchain_core.documents import Document
-from pinecone import Pinecone, ServerlessSpec
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import Pinecone as LangchainPinecone
+from langchain.documents import Document
+import pinecone
 import urllib3
 from dotenv import load_dotenv
 
@@ -20,9 +19,9 @@ pinecone_api_key = os.getenv("PINECONE_API_KEY")
 # Suppress warnings related to unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Initialize Pinecone using the new class-based method
+# Initialize Pinecone
 try:
-    pc = Pinecone(api_key=pinecone_api_key)
+    pinecone.init(api_key=pinecone_api_key, environment="us-west1-gcp")  # Make sure to specify your Pinecone environment
 except Exception as e:
     st.error(f"Error initializing Pinecone: {e}")
     st.stop()
@@ -38,10 +37,10 @@ vector_store = None
 
 # Check if the index exists; create it if it doesn't
 try:
-    existing_indexes = pc.list_indexes().names()
+    existing_indexes = pinecone.list_indexes()
     st.write(f"Existing indexes: {existing_indexes}")  # Debugging output
     if index_name not in existing_indexes:
-        pc.create_index(name=index_name, dimension=1536, metric='euclidean', spec=ServerlessSpec(cloud='aws', region='us-west-2'))
+        pinecone.create_index(name=index_name, dimension=1536, metric='euclidean')
         st.success(f"Index '{index_name}' created successfully.")
     else:
         st.success(f"Index '{index_name}' already exists.")
@@ -51,8 +50,7 @@ except Exception as e:
 
 # Initialize LangchainPinecone vector store correctly
 try:
-    vector_store = LangchainPinecone(index_name=index_name)
-    vector_store.embed_function = embeddings_model.embed_query  # Set the embedding function after initialization
+    vector_store = LangchainPinecone(index_name=index_name, embedding_function=embeddings_model.embed_query)
     st.success("Vector store initialized successfully.")
 except Exception as e:
     st.error(f"Error initializing vector store: {e}")  # Handle initialization error
@@ -173,7 +171,7 @@ elif app_mode == "View Documents & Clear Index":
     with col1:
         if st.button("Clear Pinecone Index"):
             try:
-                pc.delete_index(index_name)  # Adjust as necessary; consider using clear or delete functions
+                pinecone.delete_index(index_name)  # Adjust as necessary; consider using clear or delete functions
                 st.success("Pinecone Index has been successfully cleared.")
             except Exception as e:
                 st.error(f"Error clearing Pinecone Index: {e}")
@@ -237,8 +235,3 @@ elif app_mode == "Search in Pinecone/LLM":
                 st.session_state.results = []
                 st.session_state.llm_response = ''
                 st.rerun()  # Use st.rerun() for a fresh start
-
-# Optional: Visualize the state of variables for debugging
-# st.write(f"Current query: {st.session_state.query}")
-# st.write(f"Current results: {st.session_state.results}")
-# st.write(f"Current LLM response: {st.session_state.llm_response}")
