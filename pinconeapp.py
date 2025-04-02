@@ -104,7 +104,8 @@ class GroqLLM:
         }
 
         try:
-            response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False, proxies=proxy)
+            #response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False, proxies=proxy)
+            response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False)
             if response.status_code == 200:
                 collected_content = ""
                 for line in response.iter_lines():
