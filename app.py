@@ -28,6 +28,13 @@ st.write("SQLite Version (Python Library):", sqlite_version)
 
 # The path to your sqlite3.exe
 sqlite3_path = os.path.join(os.getcwd(), 'sqlite3.exe')
+st.write(f"SQLite Executable Path: {sqlite3_path}")
+
+# Check if the executable can be accessed
+if os.path.isfile(sqlite3_path):
+    st.write("Found sqlite3.exe in the current directory.")
+else:
+    st.warning("sqlite3.exe not found in the current directory.")
 
 # Function to get SQLite version using sqlite3.exe
 def get_sqlite_version():
