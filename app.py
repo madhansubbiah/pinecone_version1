@@ -1,5 +1,6 @@
 import sys
 import os
+import sqlite3
 import pysqlite3
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import subprocess
@@ -15,6 +16,13 @@ from langchain_core.documents import Document
 import urllib3
 from dotenv import load_dotenv
 
+
+# Get SQLite version
+sqlite_version = sqlite3.sqlite_version
+
+# Display in Streamlit app
+st.title("SQLite Version Display")
+st.write("SQLite Version:", sqlite_version)
 
 
 st.write("The path ",os.path.dirname(sys.executable))
