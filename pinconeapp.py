@@ -51,8 +51,8 @@ except Exception as e:
 
 # Initialize LangchainPinecone vector store
 try:
-    # Use the index_name and create an instance of LangchainPinecone correctly
-    vector_store = LangchainPinecone(pinecone_client=pc, index_name=index_name, embedding_function=embeddings.embed_query)
+    # Initialize the LangchainPinecone vector store correctly without unsupported parameters
+    vector_store = LangchainPinecone(index=index_name, embedding_function=embeddings.embed_query)
     st.success("Vector store initialized successfully.")
 except Exception as e:
     st.error(f"Error initializing vector store: {e}")  # Handle initialization error
@@ -78,7 +78,7 @@ class GroqLLM:
         }
 
         try:
-            # Make API call with proxy settings
+            # Make API call
             response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False)
 
             if response.status_code == 200:
