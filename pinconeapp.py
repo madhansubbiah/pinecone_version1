@@ -1,6 +1,6 @@
 import os
 import requests
-import Pinecone
+import pinecone
 import json
 import pandas as pd
 import streamlit as st
