@@ -1,8 +1,6 @@
 import sys
 import os
 import sqlite3
-import pysqlite3
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import subprocess
 import requests
 import json
@@ -16,6 +14,12 @@ from langchain_core.documents import Document
 import urllib3
 from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
+groq_api_key = os.getenv("API_KEY")
+
+# Suppress warnings related to unverified HTTPS requests
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Get SQLite version
 sqlite_version = sqlite3.sqlite_version
@@ -23,66 +27,30 @@ sqlite_version = sqlite3.sqlite_version
 # Display in Streamlit app
 st.title("SQLite Version Display")
 st.write("SQLite Version:", sqlite_version)
+st.write("The path:", os.path.dirname(sys.executable))
+st.write("The path before assignment:", os.environ['PATH'])
 
-
-st.write("The path ",os.path.dirname(sys.executable))
-
-
-# Load environment variables
-load_dotenv()
-groq_api_key = os.getenv("API_KEY")
-
-st.write("The path before assignment",os.environ['PATH'])
 os.environ['PATH'] = './:' + os.environ['PATH']
-st.write("The path after assignment",os.environ['PATH'])
-#Function to get SQLite version
+st.write("The path after assignment:", os.environ['PATH'])
+
+# Function to get SQLite version
 def get_sqlite_version():
+    st.write("Inside SQLite version")
     try:
         # Call sqlite3.exe with --version
         result = subprocess.run(['sqlite3', '--version'], capture_output=True, text=True, check=True)
-        # Print the output (the version)
-        #print("SQLite Version:", result.stdout.strip())
         st.write("SQLite Version:", result.stdout.strip())
     except Exception as e:
-        print("Error while trying to get SQLite version:", e)
-
-
-# def get_sqlite_version():
-#     version = sqlite3.sqlite_version
-#     print("SQLite Version:", version)
-
-# st.write("SQLite Version:",sqlite3.sqlite_version)
+        st.warning(f"Error while trying to get SQLite version: {e}")
 
 # Call the function to print the SQLite version
+st.write("Going to call sqlite")
 get_sqlite_version()
-
-# Suppress warnings related to unverified HTTPS requests
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+st.write("After called sqlite")
 
 # Initialize embeddings and vector store
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-vector_store = Chroma(
-    collection_name="example_collection",
-    embedding_function=embeddings,
-    persist_directory="./chroma_langchain_db"
-)
-
-def handle_not_satisfied(query):
-    st.session_state.satisfaction = "No"
-    st.write("You clicked 'Not Satisfied'. Invoking LLM to find more detailed answers...")
-
-    # Debugging statement to check the query being passed
-    st.write(f"Query passed to LLM: {query}")  # Added debug statement
-
-    prompt = f"Given the question: {query}, please provide a detailed answer based on current knowledge."
-    llm = GroqLLM(api_key=groq_api_key)
-    st.session_state.llm_response = llm.invoke([{"role": "user", "content": prompt}])
-    
-    if st.session_state.llm_response:
-        st.write("ChatGroq Response:")
-        st.write(st.session_state.llm_response)
-    else:
-        st.write("No response was obtained from the LLM.")
+vector_store = Chroma(collection_name="example_collection", embedding_function=embeddings, persist_directory="./chroma_langchain_db")
 
 class GroqLLM:
     def __init__(self, api_key):
@@ -127,10 +95,22 @@ class GroqLLM:
             st.error(f"An error occurred while calling the API: {e}")
             return ""
 
-def score_result(text, query):
-    query_words = query.lower().split()
-    score = sum(text.lower().count(word) for word in query_words)
-    return score
+def handle_not_satisfied(query):
+    st.session_state.satisfaction = "No"
+    st.write("You clicked 'Not Satisfied'. Invoking LLM to find more detailed answers...")
+
+    # Debugging statement to check the query being passed
+    st.write(f"Query passed to LLM: {query}")
+
+    prompt = f"Given the question: {query}, please provide a detailed answer based on current knowledge."
+    llm = GroqLLM(api_key=groq_api_key)
+    st.session_state.llm_response = llm.invoke([{"role": "user", "content": prompt}])
+    
+    if st.session_state.llm_response:
+        st.write("ChatGroq Response:")
+        st.write(st.session_state.llm_response)
+    else:
+        st.write("No response was obtained from the LLM.")
 
 # Streamlit application
 st.title("Chroma and ChatGroq Query Interface")
@@ -228,7 +208,6 @@ elif app_mode == "Search in Chroma DB/LLM":
                     scored_results.sort(key=lambda x: x[1], reverse=True)
                     st.session_state.results = scored_results
 
-                    #st.write("Found relevant texts in Chroma:")
                     for text, score in st.session_state.results:
                         st.write(f"**Score:** {score} | **Content:** {text}")
                 else:
@@ -245,7 +224,7 @@ elif app_mode == "Search in Chroma DB/LLM":
                 st.session_state.query = ''
                 st.session_state.results = []
                 st.session_state.llm_response = ''
-                st.rerun()  # Updated to use st.rerun() instead of st.experimental_rerun()
+                st.rerun()  # Use st.rerun() for a fresh start
 
 # Optional: Visualize the state of variables for debugging
 # st.write(f"Current query: {st.session_state.query}")
