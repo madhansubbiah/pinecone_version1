@@ -57,8 +57,9 @@ except Exception as e:
 
 # Initialize LangchainPinecone vector store
 try:
-    # Initialize the LangchainPinecone without passing embedding_function directly to Pinecone
-    vector_store = LangchainPinecone(embedding_function=embeddings.embed_query, pinecone_client=pc, index_name=index_name)
+    # Initialize the LangchainPinecone vector store correctly
+    vector_store = LangchainPinecone(pinecone_client=pc, index_name=index_name)
+    vector_store.set_embedding_function(embeddings.embed_query)  # Set the embedding function correctly
     st.success("Vector store initialized successfully.")
 except Exception as e:
     st.error(f"Error initializing vector store: {e}")  # Handle initialization error
