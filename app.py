@@ -1,6 +1,5 @@
 import sys
 import os
-import sqlite3
 import requests
 import json
 import pandas as pd
@@ -20,14 +19,9 @@ groq_api_key = os.getenv("API_KEY")
 # Suppress warnings related to unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Get SQLite version directly from the sqlite3 library
-sqlite_version = sqlite3.sqlite_version
-st.title("SQLite Version Display")
-st.write("SQLite Version (Python Library):", sqlite_version)
-
-# Initialize embeddings and vector store
+# Initialize embeddings and vector store using in-memory storage
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-vector_store = Chroma(collection_name="example_collection", embedding_function=embeddings, persist_directory="./chroma_langchain_db")
+vector_store = Chroma(collection_name="example_collection", embedding_function=embeddings, persist_directory=None)
 
 class GroqLLM:
     def __init__(self, api_key):
