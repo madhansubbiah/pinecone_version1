@@ -21,25 +21,25 @@ groq_api_key = os.getenv("API_KEY")
 # Suppress warnings related to unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Get SQLite version
+# Get SQLite version directly from the sqlite3 library
 sqlite_version = sqlite3.sqlite_version
-
-# Display in Streamlit app
 st.title("SQLite Version Display")
-st.write("SQLite Version:", sqlite_version)
-st.write("The path:", os.path.dirname(sys.executable))
-st.write("The path before assignment:", os.environ['PATH'])
+st.write("SQLite Version (Python Library):", sqlite_version)
 
-os.environ['PATH'] = './:' + os.environ['PATH']
-st.write("The path after assignment:", os.environ['PATH'])
+# The path to your sqlite3.exe
+sqlite3_path = os.path.join(os.getcwd(), 'sqlite3.exe')
 
-# Function to get SQLite version
+# Function to get SQLite version using sqlite3.exe
 def get_sqlite_version():
     st.write("Inside SQLite version")
     try:
         # Call sqlite3.exe with --version
-        result = subprocess.run(['sqlite3.exe', '--version'], capture_output=True, text=True, check=True)
-        st.write("SQLite Version:", result.stdout.strip())
+        result = subprocess.run([sqlite3_path, '--version'], capture_output=True, text=True, check=True)
+        st.write("SQLite Version (Executable):", result.stdout.strip())
+    except FileNotFoundError:
+        st.warning("sqlite3.exe not found in the current directory.")
+    except PermissionError:
+        st.warning("Permission denied when trying to execute sqlite3.exe.")
     except Exception as e:
         st.warning(f"Error while trying to get SQLite version: {e}")
 
