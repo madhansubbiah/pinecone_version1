@@ -14,6 +14,7 @@ import urllib3
 from dotenv import load_dotenv
 
 
+st.write("The path ",os.path.dirname(sys.executable))
 
 # Load environment variables
 load_dotenv()
