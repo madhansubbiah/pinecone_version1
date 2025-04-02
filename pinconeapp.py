@@ -8,7 +8,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
 from langchain_community.vectorstores import Pinecone as LangchainPinecone
 from langchain_core.documents import Document
-import pinecone
+from pinecone import Pinecone, ServerlessSpec
 import urllib3
 from dotenv import load_dotenv
 
@@ -20,15 +20,9 @@ pinecone_api_key = os.getenv("PINECONE_API_KEY")
 # Suppress warnings related to unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Proxy configuration
-proxies = {
-    'http': 'http://webproxy.merck.com:8080',
-    'https': 'http://webproxy.merck.com:8080'
-}
-
-# Initialize Pinecone (the proxy configuration can be removed if not needed)
+# Initialize Pinecone using the new class-based method
 try:
-    pinecone.init(api_key=pinecone_api_key)
+    pc = Pinecone(api_key=pinecone_api_key)
 except Exception as e:
     st.error(f"Error initializing Pinecone: {e}")
     st.stop()
@@ -44,10 +38,10 @@ vector_store = None
 
 # Check if the index exists; create it if it doesn't
 try:
-    existing_indexes = pinecone.list_indexes()
+    existing_indexes = pc.list_indexes().names()
     st.write(f"Existing indexes: {existing_indexes}")  # Debugging output
     if index_name not in existing_indexes:
-        pinecone.create_index(name=index_name, dimension=1536, metric='euclidean')
+        pc.create_index(name=index_name, dimension=1536, metric='euclidean', spec=ServerlessSpec(cloud='aws', region='us-west-2'))
         st.success(f"Index '{index_name}' created successfully.")
     else:
         st.success(f"Index '{index_name}' already exists.")
@@ -85,7 +79,7 @@ class GroqLLM:
 
         try:
             # Make API call with proxy settings
-            response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False, proxies=proxies)
+            response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False)
 
             if response.status_code == 200:
                 collected_content = ""
@@ -181,7 +175,7 @@ elif app_mode == "View Documents & Clear Index":
     with col1:
         if st.button("Clear Pinecone Index"):
             try:
-                pinecone.delete_index(index_name)  # Adjust as necessary; consider using clear or delete functions
+                pc.delete_index(index_name)  # Adjust as necessary; consider using clear or delete functions
                 st.success("Pinecone Index has been successfully cleared.")
             except Exception as e:
                 st.error(f"Error clearing Pinecone Index: {e}")
