@@ -38,7 +38,7 @@ def get_sqlite_version():
     st.write("Inside SQLite version")
     try:
         # Call sqlite3.exe with --version
-        result = subprocess.run(['sqlite3', '--version'], capture_output=True, text=True, check=True)
+        result = subprocess.run(['sqlite3.exe', '--version'], capture_output=True, text=True, check=True)
         st.write("SQLite Version:", result.stdout.strip())
     except Exception as e:
         st.warning(f"Error while trying to get SQLite version: {e}")
