@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 
 
 st.write("The path ",os.path.dirname(sys.executable))
-st.write("SQLite Version:",sqlite3.sqlite_version)
+
 
 # Load environment variables
 load_dotenv()
