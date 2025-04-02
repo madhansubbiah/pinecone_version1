@@ -6,9 +6,9 @@ import streamlit as st
 from uuid import uuid4
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_groq import ChatGroq
-from langchain.vectorstores import Pinecone  # Import Pinecone as the vector store
+from langchain.vectorstores.pinecone import Pinecone  # Correct import for Pinecone
 from langchain_core.documents import Document
-import pinecone  # Import the Pinecone client
+import pinecone
 import urllib3
 from dotenv import load_dotenv
 
@@ -144,7 +144,8 @@ elif app_mode == "View Documents & Clear Index":
     with col1:
         if st.button("Clear Pinecone Index"):
             try:
-                vector_store.delete_collection()  # Clear the index
+                # Using Pinecone API to delete all items in the index
+                pinecone.delete_index(index_name)
                 st.success("Pinecone Index has been successfully cleared.")
             except Exception as e:
                 st.error(f"Error clearing Pinecone Index: {e}")
@@ -180,6 +181,7 @@ elif app_mode == "Search in Pinecone/LLM":
                 relevant_texts = [res.page_content for res in results]
 
                 if relevant_texts:
+                    # Placeholder for scoring function (you need to define score_result function)
                     scored_results = [(text, score_result(text, query)) for text in relevant_texts]
                     scored_results.sort(key=lambda x: x[1], reverse=True)
                     st.session_state.results = scored_results

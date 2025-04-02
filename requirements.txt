@@ -1,3 +1,4 @@
+pinecone-client langchain
 pysqlite3-binary
 altair==5.5.0
 annotated-types==0.7.0
