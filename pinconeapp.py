@@ -1,6 +1,6 @@
 import os
 import requests
-import pinecone
+import pinecone  # Corrected import for Pinecone
 import json
 import pandas as pd
 import streamlit as st
@@ -10,35 +10,19 @@ from langchain.vectorstores import Pinecone as LangchainPinecone
 from langchain.schema import Document
 import urllib3
 from dotenv import load_dotenv
-from pinecone import Pinecone, ServerlessSpec  # Updated import for Pinecone initialization
 
 # Load environment variables
 load_dotenv()
 groq_api_key = os.getenv("API_KEY")
 pinecone_api_key = os.getenv("PINECONE_API_KEY")
 
-# Suppress warnings related to unverified HTTPS requests
+# Suppress warnings related to unverified HTTPS requests (only needed if SSL certs are an issue)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Set up proxy for requests (assuming HTTP_PROXY and HTTPS_PROXY environment variables are set)
-proxy = {
-    'http': 'http://webproxy.merck.com:8080',
-    'https': 'http://webproxy.merck.com:8080',
-}
-
-# Custom function to disable SSL certificate verification for Pinecone API requests
-class NoVerifySession(requests.Session):
-    def __init__(self):
-        super().__init__()
-        self.verify = False  # Disable SSL verification
-
-# Initialize Pinecone with custom session that disables SSL verification
+# Initialize Pinecone with your API Key
 try:
-    # Creating a custom session to disable SSL verification
-    session = NoVerifySession()
-    
-    # Pass the session to the Pinecone client
-    pc = Pinecone(api_key=pinecone_api_key, session=session)  # Corrected Pinecone initialization with custom session
+    # Set up Pinecone client initialization with API Key
+    pinecone.init(api_key=pinecone_api_key)  # Correct Pinecone initialization
     st.success("Pinecone initialized successfully.")
 except Exception as e:
     st.error(f"Error initializing Pinecone: {e}")
@@ -55,15 +39,15 @@ vector_store = None
 
 # Check if the index exists; create it if it doesn't
 try:
-    # Bypass SSL verification and use proxy for Pinecone API request
-    existing_indexes = pc.list_indexes().names()  # Updated method to list indexes with proxy and no SSL verification
+    # List existing indexes
+    existing_indexes = pinecone.list_indexes()  # Correct method to list indexes
     st.write(f"Existing indexes: {existing_indexes}")  # Debugging output
     if index_name not in existing_indexes:
-        pc.create_index(
+        pinecone.create_index(
             name=index_name,
             dimension=1536,
             metric='euclidean',
-            spec=ServerlessSpec(
+            spec=pinecone.ServerlessSpec(
                 cloud='aws',  # Cloud provider (e.g., aws)
                 region='us-west-2'  # Region (e.g., us-west-2)
             )
@@ -105,7 +89,6 @@ class GroqLLM:
         }
 
         try:
-            #response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False, proxies=proxy)
             response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False)
             if response.status_code == 200:
                 collected_content = ""
@@ -193,38 +176,3 @@ if app_mode == "Data Ingestion to Pinecone":
                 st.success("Free text has been successfully stored in Pinecone.")
             else:
                 st.warning("Please upload a file or enter some text.")
-
-elif app_mode == "View Documents & Clear Index":
-    st.markdown("## Manage Your Documents in Pinecone Index")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("Clear Pinecone Index"):
-            try:
-                pc.delete_index(index_name)  # Adjust as necessary; consider using clear or delete functions
-                st.success("Pinecone Index has been successfully cleared.")
-            except Exception as e:
-                st.error(f"Error clearing Pinecone Index: {e}")
-
-    with col2:
-        if st.button("View Pinecone Content"):
-            if vector_store is None:
-                st.error("Vector store is not initialized. Please check the settings.")
-            else:
-                try:
-                    all_documents = vector_store.similarity_search("", k=10)
-                    if all_documents:
-                        st.subheader("Current Documents in Pinecone:")
-                        for doc in all_documents:
-                            st.write(f"**ID:** {doc.id} | **Content:** {doc.page_content}")
-                    else:
-                        st.info("No documents found in Pinecone Index.")
-                except Exception as e:
-                    st.error(f"Error retrieving documents: {e}")
-
-elif app_mode == "Search in Pinecone/LLM":
-    st.markdown("## Search in Pinecone/LLM")
-
-    if st.session_state.satisfaction is None:
-        query = st.text_input("Enter your query:", value=st.session_state.query)
-        st.session_state.query = query  # Capture the query input each time it is updated
