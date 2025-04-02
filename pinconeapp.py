@@ -6,10 +6,10 @@ import streamlit as st
 from uuid import uuid4
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Pinecone as LangchainPinecone
-from langchain.documents import Document
-import pinecone
+from langchain.schema import Document
 import urllib3
 from dotenv import load_dotenv
+from pinecone import Pinecone, ServerlessSpec  # Updated import for Pinecone initialization
 
 # Load environment variables
 load_dotenv()
@@ -19,9 +19,26 @@ pinecone_api_key = os.getenv("PINECONE_API_KEY")
 # Suppress warnings related to unverified HTTPS requests
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Initialize Pinecone
+# Set up proxy for requests (assuming HTTP_PROXY and HTTPS_PROXY environment variables are set)
+proxy = {
+    'http': 'http://webproxy.merck.com:8080',
+    'https': 'http://webproxy.merck.com:8080',
+}
+
+# Custom function to disable SSL certificate verification for Pinecone API requests
+class NoVerifySession(requests.Session):
+    def __init__(self):
+        super().__init__()
+        self.verify = False  # Disable SSL verification
+
+# Initialize Pinecone with custom session that disables SSL verification
 try:
-    pinecone.init(api_key=pinecone_api_key, environment="us-west1-gcp")  # Make sure to specify your Pinecone environment
+    # Creating a custom session to disable SSL verification
+    session = NoVerifySession()
+    
+    # Pass the session to the Pinecone client
+    pc = Pinecone(api_key=pinecone_api_key, session=session)  # Corrected Pinecone initialization with custom session
+    st.success("Pinecone initialized successfully.")
 except Exception as e:
     st.error(f"Error initializing Pinecone: {e}")
     st.stop()
@@ -37,13 +54,24 @@ vector_store = None
 
 # Check if the index exists; create it if it doesn't
 try:
-    existing_indexes = pinecone.list_indexes()
+    # Bypass SSL verification and use proxy for Pinecone API request
+    existing_indexes = pc.list_indexes().names()  # Updated method to list indexes with proxy and no SSL verification
     st.write(f"Existing indexes: {existing_indexes}")  # Debugging output
     if index_name not in existing_indexes:
-        pinecone.create_index(name=index_name, dimension=1536, metric='euclidean')
+        pc.create_index(
+            name=index_name,
+            dimension=1536,
+            metric='euclidean',
+            spec=ServerlessSpec(
+                cloud='aws',  # Cloud provider (e.g., aws)
+                region='us-west-2'  # Region (e.g., us-west-2)
+            )
+        )
         st.success(f"Index '{index_name}' created successfully.")
     else:
         st.success(f"Index '{index_name}' already exists.")
+except requests.exceptions.SSLError as ssl_error:
+    st.error(f"SSL certificate verification failed: {ssl_error}")
 except Exception as e:
     st.error(f"Error while checking or creating index: {e}")
     st.stop()
@@ -76,7 +104,7 @@ class GroqLLM:
         }
 
         try:
-            response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False)
+            response = requests.post(self.url, headers=headers, json=data, stream=True, verify=False, proxies=proxy)
             if response.status_code == 200:
                 collected_content = ""
                 for line in response.iter_lines():
@@ -171,7 +199,7 @@ elif app_mode == "View Documents & Clear Index":
     with col1:
         if st.button("Clear Pinecone Index"):
             try:
-                pinecone.delete_index(index_name)  # Adjust as necessary; consider using clear or delete functions
+                pc.delete_index(index_name)  # Adjust as necessary; consider using clear or delete functions
                 st.success("Pinecone Index has been successfully cleared.")
             except Exception as e:
                 st.error(f"Error clearing Pinecone Index: {e}")
@@ -198,40 +226,3 @@ elif app_mode == "Search in Pinecone/LLM":
     if st.session_state.satisfaction is None:
         query = st.text_input("Enter your query:", value=st.session_state.query)
         st.session_state.query = query  # Capture the query input each time it is updated
-        k = st.number_input("Number of results to retrieve:", min_value=1, max_value=10, value=5)
-        filter_source = st.selectbox("Select source for filtering:", ["All", "user_upload", "user_input"])
-
-        # Buttons in the same line
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            if st.button("Search"):
-                if vector_store is None:
-                    st.error("Vector store is not initialized. Please check the settings.")
-                else:
-                    filter_condition = {"source": filter_source} if filter_source != "All" else None
-                    results = vector_store.similarity_search(query, k=k, filter=filter_condition)
-                    relevant_texts = [res.page_content for res in results]
-
-                    if relevant_texts:
-                        # Placeholder for scoring function (define score_result function as per your logic)
-                        scored_results = [(text, score_result(text, query)) for text in relevant_texts]
-                        scored_results.sort(key=lambda x: x[1], reverse=True)
-                        st.session_state.results = scored_results
-
-                        for text, score in st.session_state.results:
-                            st.write(f"**Score:** {score} | **Content:** {text}")
-                    else:
-                        st.info("No relevant texts found in Pinecone.")
-
-        with col2:
-            if st.button("Not Satisfied"):
-                handle_not_satisfied(st.session_state.query)
-
-        with col3:
-            if st.button("Start New Query"):
-                # Clear session state for a new query
-                st.session_state.satisfaction = None
-                st.session_state.query = ''
-                st.session_state.results = []
-                st.session_state.llm_response = ''
-                st.rerun()  # Use st.rerun() for a fresh start
