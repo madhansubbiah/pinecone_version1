@@ -140,7 +140,7 @@ torchvision
 torchaudio
 tornado
 tqdm
-transformers
+transformers --upgrade
 typer
 typing-inspect
 typing-inspection
