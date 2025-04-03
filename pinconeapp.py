@@ -71,10 +71,12 @@ except Exception as e:
 
 # Initialize LangchainPinecone vector store correctly
 try:
-    #vector_store = LangchainPinecone(index_name=index_name, embedding_function=embeddings_model.embed_query)
+    #first version vector_store = LangchainPinecone(index_name=index_name, embedding_function=embeddings_model.embed_query)
     # Ensure the Pinecone index is initialized properly
-    index = pc.Index(index_name)  # Get Pinecone index instance
-    vector_store = LangchainPinecone(index, embeddings_model, "text")  # Correct initialization
+    # second version index = pc.Index(index_name)  # Get Pinecone index instance
+    # vector_store = LangchainPinecone(index, embeddings_model, "text")  # Correct initialization
+    # third version
+    vector_store = LangchainPinecone.from_existing_index(index_name=index_name, embedding=embeddings_model)
 
     st.success("Vector store initialized successfully.")
 except Exception as e:
