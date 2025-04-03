@@ -121,7 +121,7 @@ rsa
 safetensors
 scikit-learn
 scipy
-sentence-transformers
+sentence-transformers 
 shellingham
 six
 smmap
@@ -135,12 +135,12 @@ threadpoolctl
 tokenizers
 toml
 tomli
-torch
+torch 
 torchvision
 torchaudio
 tornado
 tqdm
-transformers --upgrade
+transformers 
 typer
 typing-inspect
 typing-inspection
