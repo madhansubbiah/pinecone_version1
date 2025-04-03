@@ -33,14 +33,14 @@ except Exception as e:
 index_name = "example-index"  # Use lower case and hyphens
 
 # Initialize embeddings
-#embeddings_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+embeddings_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
 
-os.environ["HF_HOME"] = "/home/adminuser/.cache/huggingface"
+# os.environ["HF_HOME"] = "/home/adminuser/.cache/huggingface"
 
-embeddings_model = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-mpnet-base-v2",
-    model_kwargs={"cache_dir": os.environ["HF_HOME"]}
-)
+# embeddings_model = HuggingFaceEmbeddings(
+#     model_name="sentence-transformers/all-mpnet-base-v2",
+#     model_kwargs={"cache_dir": os.environ["HF_HOME"]}
+# )
 
 # Initialize vector_store as None initially
 vector_store = None
